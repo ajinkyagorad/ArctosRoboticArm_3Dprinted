@@ -24,7 +24,6 @@ This project leverages the MKS SERVO42/57D CAN-based closed-loop stepper motor d
 
 ## Software Setup 🖥️
 ### Prerequisites 📋
-- **Operating System**: Ubuntu 22.04 LTS 🐧
 - **Dependencies**:
   ```bash
   sudo apt update
