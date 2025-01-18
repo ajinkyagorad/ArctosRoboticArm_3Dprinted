@@ -345,9 +345,9 @@ def read_encoder_carry_value(bus, motor_id):
     
     if response and len(response) == 8:
         # Extract carry value (bytes 2-5 as signed int32)
-        carry = int.from_bytes(response[1:5], byteorder='little', signed=True)
+        carry = int.from_bytes(response[1:3], byteorder='little', signed=True)
         # Extract encoder value (bytes 6-7 as unsigned int16)
-        value = int.from_bytes(response[5:7], byteorder='little', signed=False)
+        value = int.from_bytes(response[3:7], byteorder='little', signed=False)
         return carry, value
     return None, None
 
@@ -698,12 +698,47 @@ def start_motor_position_mode4(bus, motor_id, speed, acc, abs_axis):
     Returns:
         The status from the motor.
     """
-    abs_axis_bytes = abs_axis.to_bytes(3, byteorder='big', signed=True)
-    data = [0xF5, speed, acc] + list(abs_axis_bytes)
-    response = send_can_message(bus, motor_id, data)
-    if response:
-        return response[1]
+    # Debug: Check initial values
+    print(f"start_motor_position_mode4 called with motor_id={motor_id}, speed={speed}, acc={acc}, abs_axis={abs_axis}")
+    
+    # Validate ranges
+    if not (0 <= speed <= 3000):
+        raise ValueError("speed must be between 0 and 3000.")
+    if not (0 <= acc <= 255):
+        raise ValueError("acc must be between 0 and 255.")
+    if not (-8388607 <= abs_axis <= 8388607):
+        raise ValueError("abs_axis must be between -8388607 and +8388607.")
+    
+    # Split speed into two bytes
+    speed_high = (speed >> 8) & 0xFF  # High byte
+    speed_low = speed & 0xFF  # Low byte
+    
+    # Convert abs_axis to 3 bytes
+    try:
+        abs_axis_bytes = abs_axis.to_bytes(3, byteorder="big", signed=True)
+        print(f"abs_axis converted to bytes: {list(abs_axis_bytes)}")
+    except Exception as e:
+        print(f"Error converting abs_axis to bytes: {e}")
+        raise
+    
+    # Prepare CAN data
+    data = [0xF5, speed_high, speed_low, acc] + list(abs_axis_bytes)
+    print(f"Prepared CAN data: {data}")
+    
+    # Send the CAN message
+    try:
+        response = send_can_message(bus, motor_id, data, dlc=8)
+        if response:
+            print(f"Response received: {response}")
+            return response[1]  # Status byte
+        else:
+            print("No response received from motor.")
+    except Exception as e:
+        print(f"Error sending CAN message: {e}")
+        raise
+    
     return None
+
 def stop_motor_position_mode4(bus, motor_id, acc=0):
     """
     Stop the motor in position mode 4.
@@ -720,4 +755,43 @@ def stop_motor_position_mode4(bus, motor_id, acc=0):
     response = send_can_message(bus, motor_id, data)
     if response:
         return response[1]
+    return None
+def set_0_mode(bus, motor_id, mode, enable, speed, direction):
+    """
+    Set the 0_Mode command for the motor.
+
+    Args:
+        bus: CAN bus instance.
+        motor_id: Motor CAN ID.
+        mode: 
+            0 - Disable (do not go back to zero).
+            1 - DirMode (go back to zero with direction).
+            2 - NearMode (go back to zero with minimum angle).
+        enable: 
+            0 - Clean zero.
+            1 - Set zero.
+        speed: Speed setting (0 ~ 4, where 0 is slowest and 4 is fastest).
+        direction: 
+            0 - CW (Clockwise).
+            1 - CCW (Counterclockwise).
+
+    Returns:
+        The response from the motor.
+    """
+    if not (0 <= mode <= 2):
+        raise ValueError("Invalid mode value. Must be 0, 1, or 2.")
+    if not (0 <= enable <= 1):
+        raise ValueError("Invalid enable value. Must be 0 or 1.")
+    if not (0 <= speed <= 4):
+        raise ValueError("Invalid speed value. Must be between 0 and 4.")
+    if not (0 <= direction <= 1):
+        raise ValueError("Invalid direction value. Must be 0 (CW) or 1 (CCW).")
+
+    # Construct the data frame
+    data = [0x9A, mode, enable, speed, direction]
+    
+    # Send the CAN message
+    response = send_can_message(bus, motor_id, data, dlc=5)
+    if response:
+        return response[1]  # Status byte
     return None

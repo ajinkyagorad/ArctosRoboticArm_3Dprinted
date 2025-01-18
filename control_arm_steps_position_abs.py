@@ -3,14 +3,12 @@ import can
 import tkinter as tk
 from tkinter import ttk
 from helper_motor import (
-    start_motor_position_mode,  # Position mode for absolute/relative motion
-    stop_motor_position_mode,  # Stop motor in position mode
+    start_motor_position_mode4,  # Absolute position mode
+    stop_motor_position_mode4,  # Stop motor in position mode
     read_encoder_carry_value,  # Get encoder value
     enable_motor,  # Enable motor
     set_home_parameters,  # Set home position
-    set_working_current,  # Set working current
-    set_current_axis_to_zero,
-    set_0_mode
+    set_working_current  # Set working current
 )
 
 # Initialize the CAN bus
@@ -19,15 +17,12 @@ bus = can.interface.Bus(interface="slcan", channel="COM4", bitrate=500000)
 # Define motor IDs
 motor_ids = [1, 2, 3, 4, 5, 6]  # IDs of the six servos
 
-# Step size for motor movement (in pulses)
-default_step_size = 2000
-
-def move_motor(motor_id, step_size, direction):
-    """Move the motor by a relative step size in a specific direction."""
+def move_motor_to_position(motor_id, abs_position):
+    """Move the motor to an absolute position."""
     try:
-        speed = 500  # Set a default speed
-        acceleration = 10  # Set a default acceleration
-        start_motor_position_mode(bus, motor_id, direction=direction, speed=speed, acc=acceleration, pulses=step_size)
+        speed = 1000  # Default speed
+        acceleration = 10  # Default acceleration
+        start_motor_position_mode4(bus, motor_id, speed=speed, acc=acceleration, abs_axis=abs_position)
     except Exception as e:
         print(f"Error moving motor {motor_id}: {e}")
 
@@ -35,7 +30,7 @@ def stop_all_motors():
     """Stop all motors."""
     for motor_id in motor_ids:
         try:
-            stop_motor_position_mode(bus, motor_id, acc=0)
+            stop_motor_position_mode4(bus, motor_id, acc=0)
         except Exception as e:
             print(f"Error stopping motor {motor_id}: {e}")
 
@@ -48,40 +43,24 @@ def set_home():
         except Exception as e:
             print(f"Error setting home for motor {motor_id}: {e}")
 
-def set_encoders_to_zero():
-    """Set encoder values to zero for all motors."""
-    for motor_id in motor_ids:
-        try:
-            response = set_current_axis_to_zero(bus, motor_id)
-            if response and response[1] == 1:  # Check for success status
-                print(f"Encoder for Motor {motor_id} successfully set to zero.")
-            else:
-                print(f"Failed to set encoder for Motor {motor_id} to zero.")
-        except Exception as e:
-            print(f"Error setting encoder to zero for motor {motor_id}: {e}")
-
-
 def create_motor_control_frame(root, motor_id):
     """Create a control frame for each motor."""
     frame = ttk.LabelFrame(root, text=f"Motor {motor_id} Control")
     frame.pack(fill="x", padx=10, pady=5)
 
-    step_label = ttk.Label(frame, text="Step Size:")
-    step_label.pack(side="left", padx=5)
+    position_label = ttk.Label(frame, text="Target Position:")
+    position_label.pack(side="left", padx=5)
 
-    step_entry = ttk.Entry(frame, width=10)
-    step_entry.insert(0, str(default_step_size))
-    step_entry.pack(side="left", padx=5)
+    position_entry = ttk.Entry(frame, width=10)
+    position_entry.insert(0, "0")
+    position_entry.pack(side="left", padx=5)
 
-    def step(direction):
-        step_size = int(step_entry.get())
-        move_motor(motor_id, step_size, direction)
+    def move_to_position():
+        abs_position = int(position_entry.get())
+        move_motor_to_position(motor_id, abs_position)
 
-    forward_button = ttk.Button(frame, text="Forward (CW)", command=lambda: step(0))  # CW Direction
-    forward_button.pack(side="left", padx=5)
-
-    backward_button = ttk.Button(frame, text="Backward (CCW)", command=lambda: step(1))  # CCW Direction
-    backward_button.pack(side="left", padx=5)
+    move_button = ttk.Button(frame, text="Move to Position", command=move_to_position)
+    move_button.pack(side="left", padx=5)
 
     encoder_label = ttk.Label(frame, text="Encoder Value: --")
     encoder_label.pack(side="left", padx=5)
@@ -101,14 +80,13 @@ def create_motor_control_frame(root, motor_id):
 def main():
     """Main function to create the GUI."""
     root = tk.Tk()
-    root.title("6DOF Robot Arm Control")
+    root.title("6DOF Robot Arm Absolute Position Control")
 
     # Create motor control frames
     for motor_id in motor_ids:
         create_motor_control_frame(root, motor_id)
         enable_motor(bus, motor_id, enable=True)
         set_working_current(bus, motor_id, current_ma=3000)
-        #set_0_mode(bus, motor_id, mode=2, enable=1, speed=2, direction=0)
 
     # Add global stop button
     stop_button = ttk.Button(root, text="STOP ALL", command=stop_all_motors)
@@ -117,10 +95,6 @@ def main():
     # Add set home button
     home_button = ttk.Button(root, text="SET CURRENT POSITION AS HOME", command=set_home)
     home_button.pack(fill="x", padx=10, pady=10)
-
-    # Add set encoders to zero button
-    zero_encoders_button = ttk.Button(root, text="SET ENCODERS TO ZERO", command=set_encoders_to_zero)
-    zero_encoders_button.pack(fill="x", padx=10, pady=10)
 
     # Start the GUI loop
     root.mainloop()
