@@ -87,6 +87,32 @@ cansend slcan0 002#FDFF400A000A0052
 
 ---
 
+## Manual Control
+
+The **manual control script** enables precise movement of a 6DOF robotic arm using a graphical user interface (GUI). The GUI allows the user to interact with each motor individually, setting step sizes, controlling directions, and observing encoder values in real-time. 
+
+### Key Features:
+- **Interactive Controls**:
+  - Forward (CW) and Backward (CCW) buttons for each motor.
+  - Input box to specify step size for relative movement.
+- **Real-time Encoder Feedback**:
+  - Displays the current encoder value for each motor.
+- **Global Controls**:
+  - "STOP ALL" button to halt all motor movements instantly.
+  - "SET CURRENT POSITION AS HOME" button to configure the current motor positions as the home position.
+
+### Script Overview:
+- **`control_arm_steps_to_home.py`**:
+  - Creates the GUI interface for manual control.
+  - Integrates routines from `helper_motor.py` to interact with the servos via CAN commands.
+- **`helper_motor.py`**:
+  - Includes functions for motor control, such as starting/stopping motion, reading encoder values, and setting home positions.
+
+### GUI Screenshot:
+![Manual Control GUI](imgs/Screenshot%202025-01-18%20055800.png)
+
+---
+
 ## Acknowledgments 🙌
 Special thanks to:
 - [Arctos Robotics](https://github.com/Arctos-Robotics) for the foundational framework.
