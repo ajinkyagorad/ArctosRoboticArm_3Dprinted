@@ -33,7 +33,7 @@ python3 --version
 source /opt/ros/humble/setup.bash
 
 # Source workspace
-source ~/ros2_ws/install/setup.bash
+source ~/(path)/install/setup.bash
 
 # Run the MoveIt demo
 ros2 launch arctos_config demo.launch.py
