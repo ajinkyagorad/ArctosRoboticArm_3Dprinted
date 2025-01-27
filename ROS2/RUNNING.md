@@ -19,6 +19,47 @@ source install/setup.bash
 # Launch the demo
 ros2 launch arctos_config demo.launch.py
 ```
+```markdown
+### Instructions to Run the Setup
+
+```bash
+# Deactivate Conda (if active)
+conda deactivate
+
+# Ensure Python 3.10 is installed and active
+python3 --version
+
+# Source ROS 2 environment
+source /opt/ros/humble/setup.bash
+
+# Source workspace
+source ~/ros2_ws/install/setup.bash
+
+# Run the MoveIt demo
+ros2 launch arctos_config demo.launch.py
+```
+
+---
+
+### Commands to Close, Kill Processes, and Restart Fresh
+
+```bash
+# List and Kill All ROS 2 Processes
+pkill -9 -f ros2
+
+# Verify All ROS 2 Processes are Terminated
+ps aux | grep ros2 | grep -v grep
+
+# Clear ROS 2 Logs and State
+rm -rf ~/.ros/log
+
+# Restart ROS 2 Daemon
+ros2 daemon stop
+ros2 daemon start
+
+# Start Fresh Setup: Repeat the steps from Instructions to Run the Setup
+```
+# Start Fresh Setup: Repeat the steps from Instructions to Run the Setup
 
 ## 🎯 Common Operations
 
